@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -56,26 +57,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'library_management.wsgi.application'
 
 # 数据库配置
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    db_url = urlparse(DATABASE_URL)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': db_url.path[1:],
-            'USER': db_url.username,
-            'PASSWORD': db_url.password,
-            'HOST': db_url.hostname,
-            'PORT': db_url.port,
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
+}
 
 LANGUAGE_CODE = 'en-us'
 
