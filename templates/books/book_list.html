@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+
+<body>
+<div class="container">
+    <aside class="sidebar">
+        <div class="user-info">
+            {% if user.photo %}
+                <img src="{{ user.photo.url }}" class="user-avatar">
+            {% else %}
+                <img src="/static/default.png" class="user-avatar">
+            {% endif %}
+            <span class="user-name">{{ user.username }}</span>
+        </div>
+        <h3> TEAM 120 <br> ONLINE LIBRARY </h3>
+        <ul>
+            <li><a href="{% url 'my_borrowed_books' %}"
+                   class="{% if request.resolver_match.url_name == 'my_borrowed_books' %}active{% endif %}">My
+                Borrowed Books</a></li>
+            <hr>
+            <li><a href="{% url 'book_list2' %}"
+                   class="{% if request.resolver_match.url_name == 'book_list2' and not current_category %}active{% endif %}">All
+                Books</a></li>
+            <li><a href="{% url 'book_list2' %}?category=Literature+%26+Fiction"
+                   class="{% if current_category == 'Literature & Fiction' %}active{% endif %}">Literature &
+                Fiction</a>
+            </li>
+            <li><a href="{% url 'book_list2' %}?category=Business+%26+Finance"
+                   class="{% if current_category == 'Business & Finance' %}active{% endif %}">Business & Finance</a>
+            </li>
+            <li><a href="{% url 'book_list2' %}?category=Science+%26+Technology"
+                   class="{% if current_category == 'Science & Technology' %}active{% endif %}">Science &
+                Technology</a>
+            </li>
+            <li><a href="{% url 'book_list2' %}?category=Children+%26+Teenage"
+                   class="{% if current_category == 'Children & Teenage' %}active{% endif %}">Children & Teenage</a>
+            </li>
+            <li><a href="{% url 'book_list2' %}?category=Computing+%26+Internet"
+                   class="{% if current_category == 'Computing & Internet' %}active{% endif %}">Computing &
+                Internet</a>
+            </li>
+            <hr>
+            <li><a href="{% url 'history' %}"
+                   class="{% if request.resolver_match.url_name == 'history' %}active{% endif %}">History</a></li>
+            {% for category in categories %}
+                {% if category not in "Literature & Fiction,Business & Finance,Science & Technology,Children & Teenage,Computing & Internet,History" %}
+                    <li><a href="{% url 'book_list2' %}?category={{ category|urlencode }}"
+                           class="{% if category == current_category %}active{% endif %}">{{ category }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if user.role == "teacher" %}
+                <li><a href="{% url 'manage_book' %}" id="manage-books-link"
+                       class="{% if request.resolver_match.url_name == 'manage_book' %}active{% endif %}">Manage
+                    Books</a></li>
+            {% endif %}
+        </ul>
+        <div class="logout-container">
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> LOGOUT
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="content">
+        <h2 id="book-category-title">{{ current_category|default:"BOOKS LIST" }}</h2>
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="Search for a book...">
+            <button id="search-button" class="search-button">Search</button>
+        </div>
+        <div class="book-container">
+            {% for book in books %}
+                <div class="book-card" onclick="showBookDetail({{ book.BookID }})">
+                    {% if book.cover_image %}
+                        <img src="{{ book.cover_image.url }}" alt="{{ book.BookName }}" class="book-cover">
+                    {% else %}
+                        <img src="/static/images/default-cover.jpg" alt="No Cover" class="book-cover">
+                    {% endif %}
+                    <p class="book-title">{{ book.BookName }}</p>
+                </div>
+            {% empty %}
+                <p class="no-books">No books available</p>
+            {% endfor %}
+        </div>
+
+        <div class="pagination">
+            {% if books.has_previous %}
+                <a href="?page={{ books.previous_page_number }}" class="pagination-button">&laquo; Previous</a>
+            {% endif %}
+            <span class="pagination-text">Page {{ books.number }} of {{ books.paginator.num_pages }}</span>
+            {% if books.has_next %}
+                <a href="?page={{ books.next_page_number }}" class="pagination-button">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<div id="book-detail-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeBookDetail()">&times;</span>
+        <h2 id="modal-title"></h2>
+        <p><strong>Publisher:</strong> <span id="modal-publisher"></span></p>
+        <p><strong>Category:</strong> <span id="modal-category"></span></p>
+        <p><strong>Release Date:</strong> <span id="modal-release-date"></span></p>
+        <p><strong>In Stock:</strong> <span id="modal-instock"></span></p>
+        <p><strong>Status:</strong> <span id="modal-status"></span></p>
+        <p><strong>Description:</strong> <span id="modal-description"></span></p>
+        <h3>Latest comments:</h3>
+        <ul id="comment-list">
+            <li>Loading comments...</li>
+        </ul>
+        <br>
+        <div class="button-group">
+            <button id="borrow-btn" class="borrow-btn" onclick="borrowBook()">Borrow</button>
+            <button id="out-of-stock-btn" class="out-of-stock-btn" disabled>Out of Stock</button>
+            <button id="comment-btn" class="comment-btn" onclick="openCommentModal()">Write Comment</button>
+        </div>
+
+    </div>
+</div>
+
+<div id="comment-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeCommentModal()">&times;</span>
+        <h2>Write Your Comment</h2>
+        <div class="comment-form">
+            <textarea id="comment-text" placeholder="Write your comment here..." rows="4"></textarea>
+            <div class="button-group">
+                <button class="submit-btn" onclick="submitComment()">Submit</button>
+                <button class="cancel-btn" onclick="closeCommentModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // search function
+    document.getElementById('search-input').addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase();
+        const bookCards = document.querySelectorAll('.book-card');
+
+        bookCards.forEach(card => {
+            const title = card.querySelector('.book-title').textContent.toLowerCase();
+            if (searchTerm === '' || title.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+
+    document.getElementById('search-button').addEventListener('click', function () {
+        const searchInput = document.getElementById('search-input');
+        const searchTerm = searchInput.value.toLowerCase();
+        const bookCards = document.querySelectorAll('.book-card');
+
+        bookCards.forEach(card => {
+            const title = card.querySelector('.book-title').textContent.toLowerCase();
+            if (searchTerm === '' || title.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+
+    function closeBookDetail() {
+        document.getElementById("book-detail-modal").style.display = "none";
+    }
+
+    function borrowBook(bookID) {
+        fetch("/books/api/borrow/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify({
+                book_id: bookID
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    closeBookDetail();
+                    location.reload();
+                }
+            })
+            .catch(error => console.error("Error borrowing book:", error));
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function openCommentModal() {
+        let bookID = document.getElementById("modal-title").getAttribute("data-book-id");
+        if (!bookID) {
+            alert("Error: Book ID is missing.");
+            return;
+        }
+        document.getElementById("comment-modal").style.display = "block";
+    }
+
+    function closeCommentModal() {
+        document.getElementById("comment-modal").style.display = "none";
+    }
+
+    function submitComment() {
+        let bookID = document.getElementById("modal-title").getAttribute("data-book-id");
+        let comment = document.getElementById("comment-text").value.trim();
+
+        if (!comment) {
+            alert("Please write a comment before submitting.");
+            return;
+        }
+
+        fetch("/books/add_comment/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify({
+                book_id: parseInt(bookID),
+                content: comment
+            })
+        }).then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                closeCommentModal();
+                location.reload();
+            })
+            .catch(error => console.error("Error:", error));
+    }
+
+    function showBookDetail(bookID) {
+        fetch(`/books/api/${bookID}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("modal-title").textContent = data.BookName;
+                document.getElementById("modal-title").setAttribute("data-book-id", bookID);
+                document.getElementById("modal-publisher").textContent = data.Publisher;
+                document.getElementById("modal-category").textContent = data.Category;
+                document.getElementById("modal-release-date").textContent = data.ReleaseDate;
+                document.getElementById("modal-instock").textContent = data.InStock;
+                document.getElementById("modal-status").textContent = data.Status;
+                document.getElementById("modal-description").textContent = data.Description;
+
+                document.getElementById("borrow-btn").onclick = function () {
+                    borrowBook(bookID);
+                };
+
+                if (data.InStock > 0) {
+                    document.getElementById("borrow-btn").style.display = "block";
+                    document.getElementById("out-of-stock-btn").style.display = "none";
+                } else {
+                    document.getElementById("borrow-btn").style.display = "none";
+                    document.getElementById("out-of-stock-btn").style.display = "block";
+                }
+
+                document.getElementById("book-detail-modal").style.display = "block";
+                let commentList = document.getElementById("comment-list");
+                commentList.innerHTML = "<li>Loading comments...</li>";
+                fetch(`/books/api/comments/${bookID}/`)
+                    .then(response => response.json())
+                    .then(commentData => {
+                        commentList.innerHTML = "";
+
+                        if (commentData.success && commentData.comments.length > 0) {
+                            commentData.comments.forEach(comment => {
+                                let li = document.createElement("li");
+                                li.innerHTML = `<strong>${comment.user}:</strong> ${comment.content} (${comment.time})`;
+                                commentList.appendChild(li);
+                            });
+                        } else {
+                            commentList.innerHTML = "<li>No comments yet.</li>";
+                        }
+                    });
+
+                document.getElementById("book-detail-modal").style.display = "block";
+            });
+    }
+
+    document.getElementById('manage-books-link').addEventListener('click', function (event) {
+        event.preventDefault(); // 阻止默认链接行为
+
+        fetch("{% url 'manage_book' %}") // 获取 manage_book 页面的内容
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('main.content').innerHTML = data; // 将获取的内容插入到 main 元素中
+                document.getElementById('book-category-title').style.display = 'none'; // 隐藏书籍列表的标题
+            })
+            .catch(error => {
+                console.error('Error loading manage books:', error);
+            });
+    });
+</script>
+
+</body>
+
+</html>

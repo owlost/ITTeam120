@@ -1,0 +1,97 @@
+{% load widget_tweaks %}
+<form id="editBookForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="BookID" value="{{ book.BookID }}">
+
+    <div class="form-group">
+        <label for="{{ form.BookName.id_for_label }}">Book Name:</label>
+        {{ form.BookName|add_class:"form-control"|attr:"required"|attr:"autocomplete:off" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.Publisher.id_for_label }}">Publisher:</label>
+        {{ form.Publisher|add_class:"form-control"|attr:"required"|attr:"autocomplete:off" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.category.id_for_label }}">Category:</label>
+        {{ form.category|add_class:"form-control"|attr:"required" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.ReleaseDate.id_for_label }}">Release Date:</label>
+        {{ form.ReleaseDate|add_class:"form-control"|attr:"type:date"|attr:"required" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.Amount.id_for_label }}">Amount:</label>
+        {{ form.Amount|add_class:"form-control"|attr:"type:number"|attr:"required"|attr:"min:0" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.InStock.id_for_label }}">In Stock:</label>
+        {{ form.InStock|add_class:"form-control"|attr:"type:number"|attr:"required"|attr:"min:0" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.Status.id_for_label }}">Status:</label>
+        {{ form.Status|add_class:"form-control"|attr:"required" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.description.id_for_label }}">Description:</label>
+        {{ form.description|add_class:"form-control"|attr:"rows:2" }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.cover_image.id_for_label }}">Cover Image:</label>
+        {{ form.cover_image|add_class:"form-control-file" }}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submitEditBook">Save Changes</button>
+    </div>
+</form>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$(document).ready(function() {
+    $('#submitEditBook').click(function() {
+        var formData = new FormData($('#editBookForm')[0]);
+        $.ajax({
+            url: '/books/book_edit/{{ book.BookID }}/',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Book updated successfully!');
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                alert('Error updating book: ' + JSON.stringify(xhr.responseJSON.errors));
+            }
+        });
+    });
+});
+</script> 
