@@ -55,22 +55,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'library_management.wsgi.application'
 
 # 静态文件配置
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # 媒体文件配置
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# 使用whitenoise处理静态文件
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 # 数据库配置
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('PGDATABASE'),
+        'USER': os.environ.get('PGUSER'),
+        'PASSWORD': os.environ.get('PGPASSWORD'),
+        'HOST': os.environ.get('PGHOST'),
+        'PORT': os.environ.get('PGPORT'),
     }
 }
 
