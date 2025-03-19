@@ -56,17 +56,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'library_management.wsgi.application'
 
-DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': os.environ.get('DB_NAME', 'library_db'),
-    #     'USER': os.environ.get('DB_USER', 'postgres'),
-    #     'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-    #     'HOST': os.environ.get('DB_HOST', 'localhost'),
-    #     'PORT': os.environ.get('DB_PORT', '5432'),
-    # }
-'default': dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
-}
+# DATABASES = {
+# 'default': {
+#     'ENGINE': 'django.db.backends.postgresql',
+#     'NAME': os.environ.get('DB_NAME', 'library_db'),
+#     'USER': os.environ.get('DB_USER', 'postgres'),
+#     'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+#     'HOST': os.environ.get('DB_HOST', 'localhost'),
+#     'PORT': os.environ.get('DB_PORT', '5432'),
+# }
+# 'default': dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
+# }
+if os.getenv('DJANGO_ENV') == 'production':
+    DATABASES = {
+        'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 LANGUAGE_CODE = 'en-us'
 
