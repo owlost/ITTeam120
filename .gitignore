@@ -27,12 +27,14 @@ db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
+static/
 
 # Virtual Environment
 venv/
 ENV/
 env/
 .env
+.venv
 
 # IDE
 .idea/
@@ -40,7 +42,13 @@ env/
 *.swp
 *.swo
 .DS_Store
+*.sublime-workspace
+*.sublime-project
 
 # Project specific
-media/
-static/ 
+*.bak
+*.tmp
+*.temp
+.coverage
+htmlcov/
+.pytest_cache/ 
