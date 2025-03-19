@@ -12,12 +12,12 @@ def user_login(request):
         if user is not None:
             login(request, user)
             messages.success(request, "Login successful!")
-            user_role = user.role  # 假设角色信息存储在用户的 profile 中
+            user_role = user.role
             if user_role == 'teacher':
-                return redirect("manage_book")  # Redirect to the new manageBook page for teachers
+                return redirect("manage_book")
             else:
-                return redirect("book_list")  # Redirect to the book list page for other roles
-    else:
+                return redirect("book_list")
+        else:
             messages.error(request, "Invalid username or password.")
     return render(request, 'accounts/login.html')
 
