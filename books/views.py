@@ -157,8 +157,13 @@ def return_book(request, borrow_id):
 
 @login_required
 def book_list(request):
+    query = request.GET.get("q", "").strip()
     books = Book.objects.all()
-    return render(request, "books/book_list.html", {"books": books})
+
+    if query:
+        books = books.filter(BookName__icontains=query)
+
+    return render(request, "books/book_list.html", {"books": books, "query": query})
 
 
 # def get_book_details(request, book_id):
@@ -229,7 +234,7 @@ def history_view(request):
 def manage_book(request):
     if request.user.role != 'teacher':
         return redirect('book_list2')
-    
+
     if request.method == "POST":
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
@@ -237,49 +242,21 @@ def manage_book(request):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'errors': form.errors})
-    
+
     books = Book.objects.all().order_by('-BookID')
     paginator = Paginator(books, 10)
     page = request.GET.get('page')
     books = paginator.get_page(page)
-    
+
     # 获取所有不重复的分类
     categories = Book.objects.values_list('category', flat=True).distinct()
-    
+
     return render(request, 'books/manage_books.html', {
         'books': books,
         'categories': categories
     })
 
 
-# def edit_book(request, book_id):
-#     book = get_object_or_404(Book, BookID=book_id)
-#     if request.method == 'POST':
-#         form = BookForm(request.POST, instance=book)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('manage_book')
-#     else:
-#         form = BookForm(instance=book)
-#     template_path = os.path.join(settings.BASE_DIR, 'books', 'templates', 'edit_book_form.html')
-#     print(f"Attempting absolute path render: {template_path}")
-#     return render(request, template_path, {'form': form, 'book': book})
-
-# def edit_book(request, book_id):
-#     print(book_id)
-#     return HttpResponse(template.render())
-# def edit_book(request, book_id):
-#     book = get_object_or_404(Book, BookID=book_id)
-#     if request.method == 'POST':
-#         form = BookForm(request.POST, instance=book)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('manage_book')
-#     else:
-#         form = BookForm(instance=book)
-#     template_path = os.path.join(settings.BASE_DIR, 'books', 'templates', 'edit_book_form.html')
-#     print(f"Attempting absolute path render: {template_path}")
-#     return render(request, 'books/edit_book_form.html', {'form': form, 'book': book})
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Book
 from .forms import BookForm  # 确保导入了 BookForm
@@ -294,7 +271,7 @@ def edit_book(request, book_id):
     if request.method == 'POST':
         print("Received POST request for book_id:", book_id)
         print("POST data:", request.POST)
-        
+
         try:
             # 直接更新数据库中的记录
             book.BookName = request.POST.get('BookName', book.BookName)
@@ -304,7 +281,7 @@ def edit_book(request, book_id):
             book.Amount = int(request.POST.get('Amount', book.Amount))
             book.InStock = int(request.POST.get('InStock', book.InStock))
             book.Status = request.POST.get('Status', book.Status)
-            
+
             book.save()
             return JsonResponse({'success': True})
         except Exception as e:
@@ -335,28 +312,28 @@ def delete_book(request, pk):
 def borrow_records(request):
     if not request.user.role == 'teacher':
         return redirect('book_list2')
-    
+
     # 获取状态过滤参数
     status_filter = request.GET.get('status', 'all')
-    
+
     # 获取所有借阅记录
     records = BorrowInfo.objects.all().order_by('-BorrowTime')
-    
+
     # 根据状态过滤记录
     if status_filter != 'all':
         records = records.filter(Status=status_filter)
-    
+
     # 分页
     page = request.GET.get('page', 1)
     paginator = Paginator(records, 10)  # 每页显示10条记录
-    
+
     try:
         records = paginator.page(page)
     except PageNotAnInteger:
         records = paginator.page(1)
     except EmptyPage:
         records = paginator.page(paginator.num_pages)
-    
+
     return render(request, 'books/borrow_records.html', {
         'records': records,
         'status_filter': status_filter
@@ -368,11 +345,11 @@ def borrow_records(request):
 def force_return_book(request, borrow_id):
     if not request.user.role == 'teacher':
         return redirect('book_list2')
-        
+
     if request.method == "POST":
         try:
             borrow_info = get_object_or_404(BorrowInfo, Number=borrow_id)
-            
+
             if borrow_info.Status == "Borrowed":
                 borrow_info.Status = "Returned"
                 borrow_info.ActualReturnTime = timezone.now()
@@ -396,5 +373,5 @@ def force_return_book(request, borrow_id):
                 'success': False,
                 'message': str(e)
             }, status=500)
-    
+
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
