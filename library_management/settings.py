@@ -3,6 +3,12 @@ from pathlib import Path
 
 import dj_database_url
 
+import os
+
+# 用于打印环境变量以确认其值
+print("DJANGO_ENV:", os.getenv('DJANGO_ENV'))
+print("DATABASE_URL:", os.getenv('DATABASE_URL'))
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
