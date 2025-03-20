@@ -1,9 +1,6 @@
 import os
 from pathlib import Path
-
 import dj_database_url
-
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,9 +11,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-load_dotenv()
+ALLOWED_HOSTS = ['*']
 
-ALLOWED_HOSTS = ['*']  # 在生产环境中应该设置具体的域名
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.herokuapp.com',
+]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -63,23 +62,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'library_management.wsgi.application'
 
-# DATABASES = {
-# 'default': {
-#     'ENGINE': 'django.db.backends.postgresql',
-#     'NAME': os.environ.get('DB_NAME', 'library_db'),
-#     'USER': os.environ.get('DB_USER', 'postgres'),
-#     'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-#     'HOST': os.environ.get('DB_HOST', 'localhost'),
-#     'PORT': os.environ.get('DB_PORT', '5432'),
-# }
-# 'default': dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
-# }
-
+# Database configuration for Heroku
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
 LANGUAGE_CODE = 'en-us'
@@ -90,17 +78,23 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Static files configuration
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# 配置静态文件存储
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+# Media files configuration
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 登录URL设置
+# Security settings for Heroku
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Login settings
 LOGIN_URL = 'login'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
