@@ -59,6 +59,7 @@
                 <li><a href="{% url 'manage_book' %}" id="manage-books-link"
                        class="{% if request.resolver_match.url_name == 'manage_book' %}active{% endif %}">Manage
                     Books</a></li>
+                <li><a href="#" id="show-stats-link">Monthly Statistics</a></li>
             {% endif %}
         </ul>
         <div class="logout-container">
@@ -72,6 +73,10 @@
     </aside>
 
     <main class="content">
+        <div id="stats-container" style="display: none; margin-bottom: 20px;">
+            <h2>本月借阅统计</h2>
+            <canvas id="monthlyBorrowChart"></canvas>
+        </div>
         <h2 id="book-category-title">{{ current_category|default:"BOOKS LIST" }}</h2>
         <div class="search-container">
             <input type="text" id="search-input" class="search-input" placeholder="Search for a book...">
@@ -142,6 +147,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // search function
     document.getElementById('search-input').addEventListener('input', function () {
@@ -316,6 +322,50 @@
                 console.error('Error loading manage books:', error);
             });
     });
+
+    // 添加图表相关代码
+    document.getElementById('show-stats-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        const statsContainer = document.getElementById('stats-container');
+        statsContainer.style.display = statsContainer.style.display === 'none' ? 'block' : 'none';
+        
+        if (statsContainer.style.display === 'block') {
+            fetchMonthlyBorrowStats();
+        }
+    });
+
+    function fetchMonthlyBorrowStats() {
+        fetch('/books/api/monthly-borrow-stats/')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('monthlyBorrowChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: '借阅数量',
+                            data: data.values,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching monthly stats:', error));
+    }
 </script>
 
 </body>

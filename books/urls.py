@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import book_list, book_detail_api, borrow_book, my_borrowed_books, book_list2, get_book_comments, \
-    return_book, add_comment, book_detail, history_view, manage_book, edit_book, delete_book, borrow_records, force_return_book
+    return_book, add_comment, book_detail, history_view, manage_book, edit_book, delete_book, borrow_records, force_return_book, get_monthly_borrow_stats
 
 urlpatterns = [
     path('', book_list2, name='book_list2'),
@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/comments/<int:book_id>/', get_book_comments, name='get_book_comments'),
     path('borrow_records/', borrow_records, name='borrow_records'),
     path('force_return/<int:borrow_id>/', force_return_book, name='force_return_book'),
+    path('api/monthly-borrow-stats/', get_monthly_borrow_stats, name='monthly_borrow_stats'),
 ]

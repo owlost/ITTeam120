@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
+from django.db import models
 
 from books.forms import BookForm
 from .models import Book, BorrowInfo, Comment
@@ -19,6 +20,9 @@ import json
 
 @login_required
 def book_list2(request):
+    if request.user.role == 'teacher':
+        return redirect('manage_book')
+        
     category = request.GET.get('category', "All Books")
     books = Book.objects.all()
     if category and category != "All Books":
@@ -236,24 +240,30 @@ def manage_book(request):
         return redirect('book_list2')
 
     if request.method == "POST":
+        print("Received POST request")
+        print("POST data:", request.POST)
+        print("FILES:", request.FILES)
+        
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             return JsonResponse({'success': True})
         else:
+            print("Form errors:", form.errors)
             return JsonResponse({'success': False, 'errors': form.errors})
 
     books = Book.objects.all().order_by('-BookID')
     paginator = Paginator(books, 10)
     page = request.GET.get('page')
     books = paginator.get_page(page)
-
-    # 获取所有不重复的分类
-    categories = Book.objects.values_list('category', flat=True).distinct()
-
+    
+    # 获取所有分类
+    categories = Book.objects.exclude(category__isnull=True).exclude(category="").values_list('category', flat=True).distinct()
+    
     return render(request, 'books/manage_books.html', {
         'books': books,
-        'categories': categories
+        'categories': categories,
+        'user': request.user
     })
 
 
@@ -281,6 +291,11 @@ def edit_book(request, book_id):
             book.Amount = int(request.POST.get('Amount', book.Amount))
             book.InStock = int(request.POST.get('InStock', book.InStock))
             book.Status = request.POST.get('Status', book.Status)
+            book.description = request.POST.get('description', book.description)
+
+            # 处理图片上传
+            if 'cover_image' in request.FILES:
+                book.cover_image = request.FILES['cover_image']
 
             book.save()
             return JsonResponse({'success': True})
@@ -375,3 +390,24 @@ def force_return_book(request, borrow_id):
             }, status=500)
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+
+
+@login_required
+def get_monthly_borrow_stats(request):
+    # 获取本月的开始和结束日期
+    today = timezone.now()
+    start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # 获取本月所有借阅记录
+    monthly_borrows = BorrowInfo.objects.filter(
+        BorrowTime__gte=start_of_month
+    ).values('BorrowUserID__username').annotate(
+        borrow_count=models.Count('Number')
+    ).order_by('-borrow_count')[:10]  # 获取前10名
+    
+    data = {
+        'labels': [record['BorrowUserID__username'] for record in monthly_borrows],
+        'values': [record['borrow_count'] for record in monthly_borrows]
+    }
+    
+    return JsonResponse(data)
