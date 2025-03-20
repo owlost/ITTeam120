@@ -4,6 +4,10 @@ from pathlib import Path
 import dj_database_url
 
 import os
+from dotenv import load_dotenv
+
+# 加载 .env 文件中的环境变量
+load_dotenv()
 
 # 用于打印环境变量以确认其值
 print("DJANGO_ENV:", os.getenv('DJANGO_ENV'))
