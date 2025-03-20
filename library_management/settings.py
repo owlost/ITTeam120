@@ -6,18 +6,15 @@ import dj_database_url
 import os
 from dotenv import load_dotenv
 
-# 加载 .env 文件中的环境变量
 load_dotenv()
-
-# 用于打印环境变量以确认其值
-print("DJANGO_ENV:", os.getenv('DJANGO_ENV'))
-print("DATABASE_URL:", os.getenv('DATABASE_URL'))
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+load_dotenv()
 
 ALLOWED_HOSTS = ['*']  # 在生产环境中应该设置具体的域名
 
@@ -77,17 +74,13 @@ WSGI_APPLICATION = 'library_management.wsgi.application'
 # }
 # 'default': dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
 # }
-if os.getenv('DJANGO_ENV') == 'production':
-    DATABASES = {
-        'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 LANGUAGE_CODE = 'en-us'
 
